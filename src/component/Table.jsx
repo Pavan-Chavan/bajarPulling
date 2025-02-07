@@ -1,44 +1,83 @@
-import React, { useEffect, useState } from "react";
-import parse from "html-react-parser";
-import axios from "axios";
-import { apiProvider } from "../constants/constants";
-import { useParams } from "react-router-dom";
-import { timeAgo } from "../Utils";
+"use client"
 
-const Table = () => {
-  const [htmlContent, setHtmlContent] = useState(null);
-	const { marketType , code } = useParams();
-	const [error, setError] = useState("");
+import { useEffect, useState } from "react"
+import CategorySelector from "./TableComponent/CategorySelector"
+import DistrictSelector from "./TableComponent/DistrictSelector"
+import CropSelector from "./TableComponent/CropSelector"
+import RateDisplay from "./TableComponent/RateDisplay"
+import BottomNavigation from "./TableComponent/BottomNavigation"
+import { apiProvider } from "../constants/constants"
+import axios from "axios"
 
-	const fetchTableData = async () => {
+function Table() {
+  const [view, setView] = useState("category")
+  const [selectedItem, setSelectedItem] = useState(null)
+	const [marketTypes, setMarketTypesDetails] = useState({});
+	const [isLoading, setIsLoading] = useState(false);
+
+	useEffect(()=>{
+		fetchSectionsData();
+	},[])
+
+  const showSelector = (category) => {
+    setView(category)
+    setSelectedItem(null)
+  }
+
+  const showRate = (item) => {
+    setSelectedItem(item)
+    setView("rate")
+  }
+
+  const goBack = () => {
+    if (view === "rate") {
+      setView(selectedItem.type)
+      setSelectedItem(null)
+    } else {
+      setView("category")
+    }
+  }
+
+	const fetchSectionsData = async () => {
 		try {
-			const response = await axios.get(`${apiProvider}/api/getTable/${marketType}/${code}`);
-			if ((response).status === 200) {
-				
-				const data = JSON.parse(response.data.table_data);
-
-				const parser = new DOMParser();
-				const doc = parser.parseFromString(data, 'text/html');
-
-				// Access the div with class name 'title2' and append new text
-				const title2Div = doc.querySelector('.title2');
-				title2Div.textContent = `Last update ${timeAgo(response.data.last_update)} ` + title2Div.textContent;
-				setHtmlContent(doc.body.innerHTML);
-			} else {
-				setError("Something went wrong");
+			setIsLoading(true)
+			const response = await axios.get(`${apiProvider}/get-sections`);
+			const data = response.data;
+			if (response.status === 200) {
+				setMarketTypesDetails(data);
 			}
-		} catch (err) {
-			setError("Something went wrong");
+			setIsLoading(false)
+		} catch (error) {
+			window.alert("something went wrong with fetching constants");
+			setIsLoading(false)
 		}
 	}
 
-  useEffect(() => {
-		fetchTableData();
-  }, []);
-  return <div>
-		<div dangerouslySetInnerHTML={{ __html: htmlContent }}></div>
-		{error ? error : ""}
-		</div>;
-};
+	if (isLoading) {
+		return (
+			<div className="container mt-5 text-center">
+				<div className="spinner-border text-primary" role="status">
+					<span className="visually-hidden">Loading...</span>
+				</div>
+				<p className="mt-2">Loading market types...</p>
+			</div>
+		)
+	}
 
-export default Table;
+	
+  return (
+    <div className="container py-5">
+      {/* <h1 className="text-center mb-5 text-success" style={{color:"#166539 !important"}}>Crop Rate Information</h1> */}
+
+      {view === "category" && <CategorySelector onSelect={showSelector} />}
+      {view === "district" && <DistrictSelector  districts={marketTypes?.DistrictCommodityGird?.DropdownOptions || []} onSelect={showRate} />}
+      {view === "crop" && <CropSelector crops={marketTypes?.CommodityGird?.DropdownOptions || []} onSelect={showRate} />}
+      {view === "rate" && <RateDisplay item={selectedItem} onBack={goBack} />}
+
+      {view != "category" && <BottomNavigation onSelect={showSelector} view={view}/>}
+    </div>
+  )
+}
+
+export default Table
+

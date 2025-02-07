@@ -8,7 +8,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/pulling-data/:secret-key" element={<WebSocketComponent />} />
-        <Route path="/:marketType/:code" element={<Table />} />
+        <Route path="" element={<Table />} />
       </Routes>
     </Router>
   );

@@ -53,8 +53,7 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     console.log('WebSocket client disconnected');
   });
-
-  // ws.send('Welcome to the WebSocket server!');
+  ws.send(JSON.stringify({status : "info" , message : `Welcome to data pulling service`}));
 });
 
 // Start the server only once
